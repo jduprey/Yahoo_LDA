@@ -43,6 +43,7 @@ protected:
 
 private:
     WordIndexDictionary& _local_dict;
+    int num_topics;
 };
 
 #endif /* UNIGRAM_MODEL_STREAMER_H_ */

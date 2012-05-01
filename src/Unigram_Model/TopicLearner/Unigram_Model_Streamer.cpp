@@ -35,6 +35,7 @@ Unigram_Model_Streamer::Unigram_Model_Streamer(TypeTopicCounts& ttc,
     _wdoc_rdr = NULL;
     _tdoc_writer = NULL;
     Context& context = Context::get_instance();
+    num_topics = context.get_int("topics");
     _num_words = _ttc.get_num_words();
     _num_topics = _ttc.get_num_topics();
     string ttc_dumpfile = context.get_string("ttc_dumpfile");
@@ -115,12 +116,54 @@ void Unigram_Model_Streamer::write(void* token) {
     int num_words_in_doc = doc.body_size();
     //Write word to topic assignments
     ostream& txt_output = std::cout;
+    
+    //Write doc id / aux id tokens
     txt_output << doc.docid() << "\t" << doc.url() << "\t";
+    
+    //Write doc-topic tokens
+    {
+        //Write Topic Proportions
+        vector<tppair> topProb;
+        
+        topic_t* local_topic_counts = (topic_t*)calloc(num_topics,sizeof(topic_t));
+        
+        for(int k=0;k<num_words_in_doc;k++) {
+            topic_t topic = doc.topic_assignment(k);
+            ++local_topic_counts[topic];
+        }
+        
+        //Store the topic, counts as proportion in a vector
+        topic_t* ltcInd = local_topic_counts;
+        for(topic_t t=0;t<num_topics;t++) {
+            int n = *ltcInd;
+            if(n!=0) {
+                tppair tp(t,(float)n/num_words_in_doc);
+                topProb.push_back(tp);
+            }
+            ++ltcInd;
+        }
+        free(local_topic_counts);
+        
+        //Sort on the counts proportion
+        std::sort(topProb.begin(),topProb.end(),prob_cmp);
+        
+        //Write out the doc-topic entries
+        for(int i=0;i<min((int)topProb.size(),NUM_TOPICS_PER_DOC);i++) {
+            txt_output << "[" << topProb[i].first << "," << topProb[i].second << "]";
+            if(i<min((int)topProb.size(),NUM_TOPICS_PER_DOC)-1)
+                txt_output << " ";
+        }
+    }
+    
+    //Write doc word - topic tokens
+    {
+        txt_output << " || ";
     for (int i = 0; i < num_words_in_doc; i++) {
         txt_output << "(" << _local_dict.get_word(doc.body(i)) << ","
                 << doc.topic_assignment(i) << ")";
         if (i < num_words_in_doc - 1)
             txt_output << " ";
+    }
     }
     txt_output << endl;
     delete upd;
