@@ -101,10 +101,10 @@ void* Unigram_Model_Streamer::read(google::protobuf::Message& doc) {
     if (ret == -1)
         return NULL;
     topic_t top;
-    for (int i = 0; i < wdoc.body_size(); i++) {
-        top = rand() % _num_topics;
-        wdoc.add_topic_assignment(top);
-    }
+//    for (int i = 0; i < wdoc.body_size(); i++) {
+//        top = rand() % _num_topics;
+//        wdoc.add_topic_assignment(top);
+//    }
     update_t *upd = new update_t;
     upd->doc = uni_doc;
     return upd;
